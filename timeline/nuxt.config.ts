@@ -32,5 +32,6 @@ export default defineNuxtConfig({
         transformAssetUrls
       }
     }
-  }
+  },
+  css: ['@mdi/font/css/materialdesignicons.min.css']
 })
