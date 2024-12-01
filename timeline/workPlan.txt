@@ -3,3 +3,5 @@ images for filter - google
 
 form:
 add aligned format to tags when filtering and submitting
+add location
+add image

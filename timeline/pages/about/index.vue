@@ -10,7 +10,9 @@
       <li>You can zoom in and out of the timeline to see more or less events at once.</li>
     </ul>
     <h2 class="title">Can I also upload events?</h2>
-    <p>Sure! Sign in to the website and once you'll get approved by the owners, you can add as many events as you want.</p>
+    <p>Sure! Click the 'Add Event' button in the top bar and log in using the username and password you received from the owner. Once you're logged in, you can add as many events as you want.</p>
+    <h2 class="title">How do I get a username and password?</h2>
+    <p>Very simple. Contact the one and only Maya Lamm and she'll be happy to provide it.</p>
   </div>
 </template>
 
