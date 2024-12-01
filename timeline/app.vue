@@ -2,7 +2,7 @@
   <v-app>
     <NuxtLayout>
       <v-app-bar>
-        <v-app-bar-title>Holocaust Timeline</v-app-bar-title>
+        <a href="/" class="app_header">Holocaust Timeline</a>
         <v-spacer />
         <v-btn to="about">About</v-btn>
         <v-btn v-if="loggedOut" to="sign_up">Sign Up</v-btn>
@@ -18,11 +18,22 @@ export default {
   name: 'App',
   computed: {
     loggedOut() {
-      return true
+      return false
     },
     loggedIn() {
-      return false
+      return true
     }
   }
 }
 </script>
+
+<style scoped lang="scss">
+.app_header {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: black;
+  text-decoration: none;
+  margin-left: 1rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+</style>
