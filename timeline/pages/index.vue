@@ -1,30 +1,35 @@
 <template>
   <div class="hp_container">
     <!-- AUTOCOMPLETE -->
-    <v-autocomplete v-model="filter" class="autocomplete" label="Search" :items="filters" />
-
-    <!-- FILTERS -->
-    <v-chip v-for="tag in activeFilters" :key="tag">
-      {{ tag }}
-      <v-icon icon="mdi-close" end @click="removeFilterFromActiveFilters(tag)" />
-    </v-chip>
+    <div class="autocomplete_container">
+      <div class="select_btn_container">
+        <v-btn @click="selectAll">Select All</v-btn>
+        <v-btn @click="deselectAll">Deselect All</v-btn>
+      </div>
+      <v-autocomplete v-model="activeFilters" label="Search" multiple chips closable-chips :items="filters" />
+      <p class="filters_list">Tags: {{ activeFilters.join(', ') }}</p>
+    </div>
 
     <!-- TIMELINE -->
     <div ref="chartContainer" class="timeline_container" />
 
     <!-- MODAL -->
-    <v-dialog v-if="activeEvent" v-model="modalIsOpen" max-width="500">
+    <v-dialog v-if="activeEvent" v-model="modalIsOpen" class="event_modal" max-width="500">
       <template #default>
-        <v-card :title="activeEvent.title">
-          <v-card-text> {{ activeEvent.description }} </v-card-text>
-          <img v-if="activeEvent.img" class="image" :src="activeEvent.img" />
-          <v-card-text class="tag_text"> Main Tag: {{ activeEvent.main_tag }}</v-card-text>
+        <div class="modal_content">
+          <h2>{{ activeEvent.y }}</h2>
+          <p>{{ activeEvent.description }}</p>
+          <img v-if="activeEvent.img" class="image" :src="activeEvent.img" width="200" height="200" />
+          <v-btn v-if="activeEvent.location" class="map_btn" @click="toggleMap">{{ showMap ? 'Close Location' : 'See Location' }} -></v-btn>
+          <iframe v-if="activeEvent.location && showMap" class="map" :src="activeEvent.location" width="400" height="450" style="border: 0" allowfullscreen="true" loading="lazy" referrerpolicy="no-referrer-when-downgrade" />
+
+          <p class="tag_text">Main Tag: {{ activeEvent.main_tag }}</p>
 
           <v-card-actions>
             <v-spacer />
             <v-btn text="Close" @click="closeModal" />
           </v-card-actions>
-        </v-card>
+        </div>
       </template>
     </v-dialog>
   </div>
@@ -38,37 +43,33 @@ export default {
   data() {
     return {
       modalIsOpen: false,
-      filter: null,
       activeFilters: [],
       moments: [],
       ranges: [],
       activeEvent: null,
-      chart: null
+      chart: null,
+      showMap: false,
+      tagColors: {}
     }
   },
   computed: {
     filteredMoments() {
-      if (!this.activeFilters.length) {
-        return this.moments
-      }
-
       const filteredMoments = []
 
       this.activeFilters.forEach(filter => {
         const momentsPerFilter = this.moments.filter(moment => {
           return moment.tags.includes(filter)
         })
-
-        filteredMoments.push(momentsPerFilter)
+        momentsPerFilter.forEach(moment => {
+          if (!filteredMoments.includes(moment)) {
+            filteredMoments.push(moment)
+          }
+        })
       })
 
       return filteredMoments.flat()
     },
     filteredRanges() {
-      if (!this.activeFilters.length) {
-        return this.ranges
-      }
-
       const filteredRanges = []
 
       this.activeFilters.forEach(filter => {
@@ -76,7 +77,11 @@ export default {
           return range.tags.includes(filter)
         })
 
-        filteredRanges.push(rangesPerFilter)
+        rangesPerFilter.forEach(range => {
+          if (!filteredRanges.includes(range)) {
+            filteredRanges.push(range)
+          }
+        })
       })
 
       return filteredRanges.flat()
@@ -91,20 +96,9 @@ export default {
       filtersWithDuplicates.forEach(filter => (filtersObj[filter] = true))
 
       return Object.keys(filtersObj).sort()
-    },
-    tagColors() {
-      const colorsObj = {}
-      this.filters.forEach(filter => {
-        colorsObj[filter] = this.getRandomHexColor()
-      })
-      return colorsObj
     }
   },
   watch: {
-    filter(newVal) {
-      this.addFilter(newVal)
-      this.createChart()
-    },
     activeFilters() {
       this.createChart()
     }
@@ -123,26 +117,39 @@ export default {
 
       this.moments = events.filter(event => !event.start)
 
+      this.setTagColors()
+      this.selectAll()
       this.createChart()
-
-      // should this sit here? is the indexing after filtering correct?
+      this.addClickListener()
+    },
+    addClickListener() {
       this.chart.listen('pointClick', e => {
-        console.log('click', e)
         const type = e.series.getType()
         if (type === 'moment') {
           this.openModal(e.pointIndex)
         }
       })
     },
+    setTagColors() {
+      this.filters.forEach(filter => {
+        this.tagColors[filter] = this.getRandomHexColor()
+      })
+    },
     getRandomHexColor() {
       const randomColor = Math.floor(Math.random() * 16777215).toString(16)
       return `#${randomColor.padStart(6, '0')}`
     },
+    selectAll() {
+      this.activeFilters = [...this.filters]
+    },
+    deselectAll() {
+      this.activeFilters = []
+    },
+    toggleMap() {
+      this.showMap = !this.showMap
+    },
     addFilter(newVal) {
       this.activeFilters.push(newVal)
-    },
-    removeFilterFromActiveFilters(tag) {
-      this.activeFilters = this.activeFilters.filter(item => item !== tag)
     },
     openModal(index) {
       this.modalIsOpen = true
@@ -153,17 +160,20 @@ export default {
       this.activeEvent = null
     },
     createChart() {
-      // Create a chart instance if necessary
-      if (!this.chart) {
-        this.chart = anychart.timeline()
-      }
-
+      // if charts already have series, remove them
       if (this.chart) {
         this.chart.removeSeries(0)
         this.chart.removeSeries(1)
       }
 
+      // Create a chart instance if necessary
+      if (!this.chart) {
+        this.chart = anychart.timeline()
+      }
+
       // Add data to the chart
+
+      //set moments
       const filteredMomentsWithColors = this.filteredMoments.map(moment => {
         return {
           ...moment,
@@ -176,7 +186,23 @@ export default {
         }
       })
       const moments = this.chart.moment(filteredMomentsWithColors)
-      this.chart.range(this.filteredRanges)
+
+      // set ranges
+      const filteredRangesWithColors = this.filteredRanges.map(range => {
+        return {
+          ...range,
+          fill: this.tagColors[range.main_tag],
+          stroke: 'black'
+        }
+      })
+      const ranges = this.chart.range(filteredRangesWithColors)
+
+      // range tooltip
+      const rangeTooltipFormat = "<span style='font-weight:600;font-size:10pt'>" + '{%name}</span><br><br>From ' + '{%start}{dateTimeFormat:YYYY MMM dd} to ' + '{%end}{dateTimeFormat:YYYY MMM dd}</span>'
+      ranges.tooltip().useHtml(true)
+      ranges.tooltip().format(rangeTooltipFormat)
+      ranges.tooltip().title().enabled(false)
+      ranges.tooltip().separator().enabled(false)
 
       // add more configuration to the chart
       this.chart.scroller(true)
@@ -201,11 +227,33 @@ export default {
 <style lang="scss" scoped>
 .hp_container {
   margin: auto 0;
+  padding: 2rem;
 }
 
-.autocomplete {
+.autocomplete_container {
   width: 20rem;
-  margin: 0 auto 10rem;
+  margin: 3rem auto 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  ::v-deep .v-chip {
+    display: none;
+  }
+
+  .select_btn_container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .filters_list {
+    display: -webkit-box; /* Use a flex container with webkit box layout */
+    -webkit-box-orient: vertical; /* Set the orientation to vertical */
+    overflow: hidden; /* Hide overflow text */
+    -webkit-line-clamp: 2; /* Limit to 2 lines */
+    text-overflow: ellipsis;
+  }
 }
 
 .timeline_container {
@@ -214,34 +262,28 @@ export default {
   margin: auto auto;
 }
 
-// .btn_container {
-//   display: inline-block;
-//   transition: transform 0.3s ease;
-//   &:hover {
-//     background: radial-gradient(#f1eaea 1rem, transparent);
-//     transform: scale(1.2);
-//     border-radius: 50%;
-//   }
-// }
+.modal_content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 100%;
+}
 
-// .event_title {
-//   font-size: 1.8rem;
-// }
-
-// .description {
-//   display: -webkit-box;
-//   -webkit-box-orient: vertical;
-//   overflow: hidden;
-//   -webkit-line-clamp: 2;
-//   text-overflow: ellipsis;
-//   max-width: 20rem;
-// }
+.map,
+.map_btn {
+  margin: 2rem auto;
+  width: 100%;
+}
 
 .tag_text {
   font-size: 0.8rem !important;
 }
 
 .image {
-  max-width: 30rem;
+  padding: 1.6rem 2.4rem;
+  width: 100%;
+  height: 100%;
+  max-width: 45.2rem !important;
 }
 </style>

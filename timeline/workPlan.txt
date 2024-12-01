@@ -1,3 +1,2 @@
-arrange code
 translations
-images for filter
+images for filter - google
