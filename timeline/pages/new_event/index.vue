@@ -18,23 +18,35 @@
         <p>I want to create a new event! Yay! What's the event type?</p>
         <!-- MOMENT OR RANGE EVENT -->
         <v-radio-group v-model="eventType" inline>
-          <v-radio label="Moment" value="moment" />
-          <v-radio label="Range" value="range" />
+          <v-radio label="Moment (an event that points to a specific date)" value="moment" />
+          <v-radio label="Range (an event that has different start and end dates)" value="range" />
         </v-radio-group>
 
         <h2 class="section_title">Information</h2>
         <!-- EVENT NAME -->
         <div class="">
-          <v-text-field id="name" v-model="formData.name" label="Event Name" name="name" required />
+          <v-text-field id="name" v-model="formData.name" label="Event Name" max-width="30rem" name="name" required />
         </div>
 
         <!-- EVENT DESCRIPTION -->
-        <div v-if="eventType === 'moment'">
+        <div>
           <v-text-field id="description" v-model="formData.description" label="Event Description" name="description" />
         </div>
 
-        <h2 class="section_title">Dates</h2>
+        <h3 class="subsection_title">Optional Information</h3>
+        <div class="optional_information_container">
+          <!-- EVENT IMAGE -->
+          <v-file-input id="image" v-model="formData.image" class="file_input" label="Optional: Image" name="image" />
+
+          <!-- EVENT MAP -->
+          <div class="map_container">
+            <v-text-field id="map_link" v-model="formData.mapLink" label="Optional: Map Link" name="map_link" />
+            <p>If you want the event to include a google map, please go to google maps and search for the location. Then click the 'share' icon and go to the 'Embed a map' tab. Copy the provided link and paste it here.</p>
+          </div>
+        </div>
+
         <!-- DATES -->
+        <h2 class="section_title">Dates</h2>
         <div>
           <!-- MOMENT DATE -->
           <div v-if="eventType === 'moment'" class="moment_date">
@@ -47,8 +59,8 @@
           </div>
         </div>
 
-        <h2 class="section_title">Tags</h2>
         <!-- TAGS -->
+        <h2 class="section_title">Tags</h2>
         <div class="tags_container">
           <!-- MAIN TAG -->
           <h3 class="subsection_title">Main Tag</h3>
@@ -60,7 +72,7 @@
 
             <div class="tag_content">
               <!-- SELECT MAIN TAG -->
-              <v-select v-if="existingTags.length" id="main_tag" v-model="formData.selectedMainTag" :required="mainTagSelectionType === 'select'" :items="existingTags" label="Select an existing tag" :disabled="mainTagSelectionType === 'create'" />
+              <v-autocomplete v-if="existingTags.length" id="main_tag" v-model="formData.selectedMainTag" :required="mainTagSelectionType === 'select'" label="Select an existing tag" :disabled="mainTagSelectionType === 'create'" :items="existingTags" />
 
               <p class="or">OR</p>
               <!-- CREATE MAIN TAG -->
@@ -72,7 +84,7 @@
           <div class="tags">
             <div class="tag_content">
               <!-- SELECT TAGS -->
-              <v-select v-if="existingTags.length" v-model="formData.selectedTags" :items="existingTags" label="Tags" multiple />
+              <v-autocomplete v-if="existingTags.length" v-model="formData.selectedTags" class="tags_selection" :items="existingTags" label="Tags" multiple />
               <div>
                 <!-- CREATE TAGS -->
                 <v-text-field id="new_tags" v-model="formData.createdTags" label="Add new tags" />
@@ -112,46 +124,54 @@ export default {
         selectedMainTag: '',
         createdMainTag: '',
         selectedTags: [],
-        createdTags: ''
+        createdTags: '',
+        mapLink: '',
+        image: null
       }
     }
   },
-  computed: {},
   methods: {
     submitEvent() {
       const payload = this.getPayload()
+
       console.log('submitting event', payload)
     },
     getPayload() {
-      const createdTags = this.formData.createdTags
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => !this.formData.selectedTags.includes(tag))
+      // main tag
+      const mainTag = this.mainTagSelectionType === 'select' ? this.formData.selectedMainTag.toLowerCase() : this.formData.createdMainTag.trim().toLowerCase()
 
-      const tags = this.formData.selectedTags.concat(createdTags)
-      const mainTag = this.mainTagSelectionType === 'select' ? this.formData.selectedMainTag : this.formData.createdMainTag
+      // other tags
+      const tagsObject = {}
+      const createdTags = this.formData.createdTags.split(',').map(tag => tag.trim().toLowerCase())
+      const selectedTagsLowerCase = this.formData.selectedTags.map(selectedTag => selectedTag.toLowerCase())
+      const tagsWithDuplicates = selectedTagsLowerCase.concat(createdTags).filter(tag => tag !== '')
+      // add main tag to tags array
+      tagsWithDuplicates.push(mainTag)
 
-      if (!tags.includes(mainTag)) {
-        tags.push(mainTag)
+      // tags without duplicates
+      tagsWithDuplicates.forEach(tag => {
+        tagsObject[tag] = true
+      })
+
+      const tags = Object.keys(tagsObject)
+
+      const payload = {
+        name: this.formData.name,
+        description: this.formData.description,
+        img: this.formData.image,
+        location: this.formData.mapLink ? this.formData.mapLink.split('"')[1] : '',
+        tags,
+        mainTag
       }
 
       if (this.eventType === 'moment') {
-        return {
-          name: this.formData.name,
-          description: this.formData.description,
-          date: this.formData.date,
-          tags,
-          mainTag
-        }
+        payload.date = this.formData.date
       } else {
-        return {
-          name: this.formData.name,
-          startDate: this.formData.startDate,
-          endDate: this.formData.endDate,
-          tags,
-          mainTag
-        }
+        payload.startDate = this.formData.startDate
+        payload.endDate = this.formData.endDate
       }
+
+      return payload
     },
     loginClicked() {
       if (this.username === this.correctUsername && this.password === this.correctPassword) {
@@ -174,7 +194,7 @@ export default {
         event.tags.forEach(tag => (tags[tag] = true))
       })
 
-      return Object.keys(tags)
+      return Object.keys(tags).sort()
     }
   },
 
@@ -203,6 +223,10 @@ export default {
     justify-content: space-between;
     align-items: flex-start;
     gap: 2rem;
+
+    .tags_selection {
+      width: 50%;
+    }
   }
 
   .or {
@@ -212,6 +236,18 @@ export default {
   .submit_btn {
     margin: 2rem auto 1rem;
     min-width: auto;
+  }
+
+  .optional_information_container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .file_input,
+  .map_container {
+    width: 50%;
   }
 }
 

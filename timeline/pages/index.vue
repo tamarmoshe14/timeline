@@ -17,7 +17,7 @@
     <v-dialog v-if="activeEvent" v-model="modalIsOpen" class="event_modal" max-width="500">
       <template #default>
         <div class="modal_content">
-          <h2>{{ activeEvent.y }}</h2>
+          <h2>{{ activeEvent.y || activeEvent.name }}</h2>
           <p>{{ activeEvent.description }}</p>
           <img v-if="activeEvent.img" class="image" :src="activeEvent.img" width="200" height="200" />
           <v-btn v-if="activeEvent.location" class="map_btn" @click="toggleMap">{{ showMap ? 'Close Location' : 'See Location' }} -></v-btn>
@@ -125,9 +125,7 @@ export default {
     addClickListener() {
       this.chart.listen('pointClick', e => {
         const type = e.series.getType()
-        if (type === 'moment') {
-          this.openModal(e.pointIndex)
-        }
+        this.openModal(e.pointIndex, type)
       })
     },
     setTagColors() {
@@ -151,9 +149,13 @@ export default {
     addFilter(newVal) {
       this.activeFilters.push(newVal)
     },
-    openModal(index) {
+    openModal(index, eventType) {
+      if (eventType === 'moment') {
+        this.activeEvent = this.filteredMoments[index]
+      } else {
+        this.activeEvent = this.filteredRanges[index]
+      }
       this.modalIsOpen = true
-      this.activeEvent = this.filteredMoments[index]
     },
     closeModal() {
       this.modalIsOpen = false
@@ -172,7 +174,6 @@ export default {
       }
 
       // Add data to the chart
-
       //set moments
       const filteredMomentsWithColors = this.filteredMoments.map(moment => {
         return {
@@ -198,7 +199,7 @@ export default {
       const ranges = this.chart.range(filteredRangesWithColors)
 
       // range tooltip
-      const rangeTooltipFormat = "<span style='font-weight:600;font-size:10pt'>" + '{%name}</span><br><br>From ' + '{%start}{dateTimeFormat:YYYY MMM dd} to ' + '{%end}{dateTimeFormat:YYYY MMM dd}</span>'
+      const rangeTooltipFormat = 'From {%start}{dateTimeFormat:YYYY MMM dd} to {%end}{dateTimeFormat:YYYY MMM dd}</span>'
       ranges.tooltip().useHtml(true)
       ranges.tooltip().format(rangeTooltipFormat)
       ranges.tooltip().title().enabled(false)
