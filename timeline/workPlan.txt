@@ -1,2 +1,7 @@
+Future improvements:
 translations
 images for filter - google
+
+
+fixes before release:
+design - tags as pills, background, fonts, frames, add tamar's email.

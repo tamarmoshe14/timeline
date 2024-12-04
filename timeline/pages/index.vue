@@ -6,8 +6,8 @@
         <v-btn @click="selectAll">Select All</v-btn>
         <v-btn @click="deselectAll">Deselect All</v-btn>
       </div>
-      <v-autocomplete v-model="activeFilters" label="Search" multiple chips closable-chips :items="filters" />
-      <p class="filters_list">Tags: {{ activeFilters.join(', ') }}</p>
+      <v-autocomplete v-model="activeFilters" label="Search" return-object multiple chips closable-chips :items="filters" />
+      <p class="filters_list">Tags: {{ activeFiltersForDisplay }}</p>
     </div>
 
     <!-- TIMELINE -->
@@ -19,9 +19,9 @@
         <div class="modal_content">
           <h2>{{ activeEvent.y || activeEvent.name }}</h2>
           <p>{{ activeEvent.description }}</p>
-          <img v-if="activeEvent.img" class="image" :src="activeEvent.img" width="200" height="200" />
-          <v-btn v-if="activeEvent.location" class="map_btn" @click="toggleMap">{{ showMap ? 'Close Location' : 'See Location' }} -></v-btn>
-          <iframe v-if="activeEvent.location && showMap" class="map" :src="activeEvent.location" width="400" height="450" style="border: 0" allowfullscreen="true" loading="lazy" referrerpolicy="no-referrer-when-downgrade" />
+          <img v-if="activeEvent.img" class="image" :src="`http://localhost:8787/image/${activeEvent.img}`" width="200" height="200" />
+          <v-btn v-if="activeEvent.embed_link" class="map_btn" @click="toggleMap">{{ showMap ? 'Close Location' : 'See Location' }} -></v-btn>
+          <iframe v-if="activeEvent.embed_link && showMap" class="map" :src="activeEvent.embed_link" width="400" height="450" style="border: 0" allowfullscreen="true" loading="lazy" referrerpolicy="no-referrer-when-downgrade" />
 
           <p class="tag_text">Main Tag: {{ activeEvent.main_tag }}</p>
 
@@ -49,7 +49,8 @@ export default {
       activeEvent: null,
       chart: null,
       showMap: false,
-      tagColors: {}
+      tagColors: {},
+      filters: []
     }
   },
   computed: {
@@ -58,7 +59,8 @@ export default {
 
       this.activeFilters.forEach(filter => {
         const momentsPerFilter = this.moments.filter(moment => {
-          return moment.tags.includes(filter)
+          const allTags = [moment.main_tag, ...moment.tags]
+          return allTags.includes(filter.title)
         })
         momentsPerFilter.forEach(moment => {
           if (!filteredMoments.includes(moment)) {
@@ -74,7 +76,8 @@ export default {
 
       this.activeFilters.forEach(filter => {
         const rangesPerFilter = this.ranges.filter(range => {
-          return range.tags.includes(filter)
+          const allTags = [range.main_tag, ...range.tags]
+          return allTags.includes(filter.title)
         })
 
         rangesPerFilter.forEach(range => {
@@ -86,16 +89,8 @@ export default {
 
       return filteredRanges.flat()
     },
-    filters() {
-      const filtersWithDuplicates = []
-      const filtersObj = {}
-
-      this.moments.forEach(moment => filtersWithDuplicates.push(...moment.tags))
-      this.ranges.forEach(range => filtersWithDuplicates.push(...range.tags))
-
-      filtersWithDuplicates.forEach(filter => (filtersObj[filter] = true))
-
-      return Object.keys(filtersObj).sort()
+    activeFiltersForDisplay() {
+      return this.activeFilters.map(filter => filter.title).join(', ')
     }
   },
   watch: {
@@ -106,21 +101,51 @@ export default {
   methods: {
     async setMomentsAndRanges() {
       const response = await fetch('http://localhost:8787/')
-      const events = await response.json()
+      let events = await response.json()
+      events = this.getFormattedEvents(events)
 
       // filter out ranges
       events.forEach(event => {
-        if (event.start) {
+        if (event.end) {
           this.ranges.push(event)
         }
       })
 
-      this.moments = events.filter(event => !event.start)
+      this.moments = events.filter(event => !event.end)
 
       this.setTagColors()
       this.selectAll()
       this.createChart()
       this.addClickListener()
+    },
+    getFormattedEvents(events) {
+      return events.map(event => {
+        return {
+          name: event.name,
+          start: event.start_date,
+          end: event.end_date,
+          img: event.image,
+          embed_link: event.embed_link,
+          description: event.description,
+          y: event.name,
+          x: event.start_date,
+          main_tag: this.filters.find(filter => filter.value === event.main_tag_id.toString()).title,
+          tags: event.tags ? event.tags.split(',').map(tagId => this.filters.find(filter => filter.value === tagId).title) : []
+        }
+      })
+    },
+    async setFilters() {
+      await fetch('http://localhost:8787/tags')
+        .then(response => response.json())
+        .then(tags => {
+          this.filters = tags.map(tag => {
+            return {
+              value: tag.id.toString(),
+              title: tag.name
+            }
+          })
+          this.setMomentsAndRanges()
+        })
     },
     addClickListener() {
       this.chart.listen('pointClick', e => {
@@ -130,7 +155,7 @@ export default {
     },
     setTagColors() {
       this.filters.forEach(filter => {
-        this.tagColors[filter] = this.getRandomHexColor()
+        this.tagColors[filter.title] = this.getRandomHexColor()
       })
     },
     getRandomHexColor() {
@@ -145,9 +170,6 @@ export default {
     },
     toggleMap() {
       this.showMap = !this.showMap
-    },
-    addFilter(newVal) {
-      this.activeFilters.push(newVal)
     },
     openModal(index, eventType) {
       if (eventType === 'moment') {
@@ -198,6 +220,9 @@ export default {
       })
       const ranges = this.chart.range(filteredRangesWithColors)
 
+      // range labels
+      ranges.labels().useHtml(true).fontColor('#fff').format('{%name}: from <span>{%start}{dateTimeFormat:YYYY}–{%end}{dateTimeFormat:YYYY}</span>')
+
       // range tooltip
       const rangeTooltipFormat = 'From {%start}{dateTimeFormat:YYYY MMM dd} to {%end}{dateTimeFormat:YYYY MMM dd}</span>'
       ranges.tooltip().useHtml(true)
@@ -220,7 +245,7 @@ export default {
     }
   },
   created() {
-    this.setMomentsAndRanges()
+    this.setFilters()
   }
 }
 </script>

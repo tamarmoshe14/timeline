@@ -1,8 +1,14 @@
+
 #:schema node_modules/wrangler/config-schema.json
 name = "timeline-d1"
 main = "src/index.ts"
 compatibility_date = "2024-11-12"
 compatibility_flags = ["nodejs_compat"]
+
+[[ d1_databases ]]
+binding = "DB" # available in your Worker on `env.DB`
+database_name = "timeline"
+database_id = "2f06aca6-8897-48a1-a561-6ed879c1e0e8"
 
 # Workers Logs
 # Docs: https://developers.cloudflare.com/workers/observability/logs/workers-logs/
@@ -74,9 +80,11 @@ enabled = true
 
 # Bind a KV Namespace. Use KV as persistent storage for small key-value pairs.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#kv-namespaces
-# [[kv_namespaces]]
-# binding = "MY_KV_NAMESPACE"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+[[kv_namespaces]]
+binding = "IMAGES"
+id = "9794d1a53f4f4381aca47b882d88671a"
+preview_id = "9794d1a53f4f4381aca47b882d88671a"
+
 
 # Bind an mTLS certificate. Use to present a client certificate when communicating with another service.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#mtls-certificates

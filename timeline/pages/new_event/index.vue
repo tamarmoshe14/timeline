@@ -95,7 +95,7 @@
         </div>
 
         <!-- SUBMIT -->
-        <v-btn class="submit_btn" color="#5865f2" width="20rem" type="submit" block>Submit</v-btn>
+        <v-btn class="submit_btn" color="#5865f2" width="20rem" type="submit" :loading="loading" block>Submit</v-btn>
       </form>
     </div>
   </div>
@@ -115,6 +115,7 @@ export default {
       mainTagSelectionType: 'select',
       eventType: 'moment',
       today: new Date().toISOString(),
+      loading: false,
       formData: {
         name: '',
         description: '',
@@ -131,47 +132,66 @@ export default {
     }
   },
   methods: {
-    submitEvent() {
+    async submitEvent() {
+      this.loading = true
       const payload = this.getPayload()
 
-      console.log('submitting event', payload)
-    },
-    getPayload() {
-      // main tag
-      const mainTag = this.mainTagSelectionType === 'select' ? this.formData.selectedMainTag.toLowerCase() : this.formData.createdMainTag.trim().toLowerCase()
+      if (this.formData.image) {
+        const imageData = new FormData()
+        imageData.append('image', this.formData.image)
 
-      // other tags
-      const tagsObject = {}
-      const createdTags = this.formData.createdTags.split(',').map(tag => tag.trim().toLowerCase())
-      const selectedTagsLowerCase = this.formData.selectedTags.map(selectedTag => selectedTag.toLowerCase())
-      const tagsWithDuplicates = selectedTagsLowerCase.concat(createdTags).filter(tag => tag !== '')
-      // add main tag to tags array
-      tagsWithDuplicates.push(mainTag)
+        const response = await fetch('http://localhost:8787/image-upload', {
+          method: 'POST',
+          body: imageData
+        })
+        const result = await response.json()
+        const imageId = result.image_id
+        payload.image = imageId
+      }
 
-      // tags without duplicates
-      tagsWithDuplicates.forEach(tag => {
-        tagsObject[tag] = true
+      await fetch('http://localhost:8787/new-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
       })
 
-      const tags = Object.keys(tagsObject)
+      this.loading = false
 
+      this.$router.push('/thank_you')
+    },
+    getPayload() {
       const payload = {
         name: this.formData.name,
         description: this.formData.description,
-        img: this.formData.image,
-        location: this.formData.mapLink ? this.formData.mapLink.split('"')[1] : '',
-        tags,
-        mainTag
+        embed_link: this.formData.mapLink ? this.formData.mapLink.split('"')[1] : '',
+        tags: this.formData.selectedTags.map(tagId => parseInt(tagId)) || [],
+        new_tags: this.getNewTags(),
+        main_tag_id: parseInt(this.formData.selectedMainTag) || '',
+        new_main_tag: this.formData.createdMainTag.trim().toLowerCase() || ''
       }
 
       if (this.eventType === 'moment') {
-        payload.date = this.formData.date
+        payload.start_date = this.getDate(this.formData.date)
       } else {
-        payload.startDate = this.formData.startDate
-        payload.endDate = this.formData.endDate
+        payload.start_date = this.getDate(this.formData.startDate)
+        payload.end_date = this.getDate(this.formData.endDate)
       }
 
       return payload
+    },
+    getDate(date) {
+      const localDate = new Date(date)
+      const utcDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate()))
+      return utcDate.toISOString() // Save as ISO UTC
+    },
+    getNewTags() {
+      if (!this.formData.createdTags) {
+        return ''
+      } else {
+        return this.formData.createdTags.includes(',') ? this.formData.createdTags.split(',').map(tag => tag.trim().toLowerCase()) : [this.formData.createdTags.trim().toLowerCase()]
+      }
     },
     loginClicked() {
       if (this.username === this.correctUsername && this.password === this.correctPassword) {
@@ -185,22 +205,23 @@ export default {
     isLoggedIn() {
       return localStorage.getItem('isLoggedInToTimeline') === 'true'
     },
-    async getTags() {
-      const response = await fetch('http://localhost:8787/')
-      const events = await response.json()
-      const tags = {}
-      events.forEach(event => {
-        tags[event.main_tag] = true
-        event.tags.forEach(tag => (tags[tag] = true))
-      })
-
-      return Object.keys(tags).sort()
+    async setTags() {
+      await fetch('http://localhost:8787/tags')
+        .then(response => response.json())
+        .then(tags => {
+          this.existingTags = tags.map(tag => {
+            return {
+              value: tag.id.toString(),
+              title: tag.name
+            }
+          })
+        })
     }
   },
 
   async created() {
-    this.existingTags = await this.getTags()
     this.loggedIn = this.isLoggedIn()
+    await this.setTags()
   }
 }
 </script>
