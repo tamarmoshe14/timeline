@@ -13,11 +13,14 @@
     <p>Sure! Click the 'Add Event' button in the top bar and log in using the username and password you received from the owner. Once you're logged in, you can add as many events as you want.</p>
     <h2 class="title">How do I get a username and password?</h2>
     <p>Very simple. Contact the one and only Maya Lamm and she'll be happy to provide it.</p>
+    <br />
+    <p>For technical issues with this website, please contact this email:<a href="mailto:tamarmoshe14@gmail.com"> tamarmoshe14@gmail.com</a></p>
   </div>
 </template>
 
 <style scoped lang="scss">
 .about_container {
+  font-family: Gill Sans;
   margin: 6rem auto;
   width: 50rem;
   text-align: center;

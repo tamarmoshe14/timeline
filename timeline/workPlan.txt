@@ -1,7 +1,11 @@
 Future improvements:
 translations
 images for filter - google
+zoom out button
 
 
 fixes before release:
-design - tags as pills, background, fonts, frames, add tamar's email.
+ add tamar's email.
+
+
+event border - black

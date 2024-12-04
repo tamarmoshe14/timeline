@@ -228,6 +228,7 @@ export default {
 
 <style lang="scss" scoped>
 .form_container {
+  font-family: Gill Sans;
   margin: 4rem 0;
   padding: 2rem;
 

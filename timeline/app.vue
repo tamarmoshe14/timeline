@@ -56,11 +56,24 @@ export default {
   color: black;
   text-decoration: none;
   margin-left: 1rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Gill Sans;
 }
 
 .btn {
   margin-inline: 1rem;
   margin-inline-end: 1rem !important;
+  font-family: Gill Sans;
+}
+
+@media (max-width: 600px) {
+  .app_header {
+    font-size: 1rem;
+  }
+
+  .btn {
+    margin-inline: 0.5rem;
+    padding-inline: 0;
+    margin-right: 0.5rem;
+  }
 }
 </style>
