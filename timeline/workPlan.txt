@@ -5,7 +5,4 @@ zoom out button
 
 
 fixes before release:
- add tamar's email.
-
-
-event border - black
+enlarge years font

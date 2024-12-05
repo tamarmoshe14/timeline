@@ -23,7 +23,7 @@
           <v-btn v-if="activeEvent.embed_link" class="map_btn" @click="toggleMap">{{ showMap ? 'Close Location' : 'See Location' }} -></v-btn>
           <iframe v-if="activeEvent.embed_link && showMap" class="map" :src="activeEvent.embed_link" width="400" height="450" style="border: 0" allowfullscreen="true" loading="lazy" referrerpolicy="no-referrer-when-downgrade" />
 
-          <v-chip class="tag_text">Main Tag: {{ activeEvent.main_tag }}</v-chip>
+          <v-chip class="tag_text" :color="tagColors[activeEvent.main_tag]" variant="flat">Main Tag: {{ activeEvent.main_tag }}</v-chip>
 
           <v-card-actions>
             <v-spacer />
@@ -197,7 +197,7 @@ export default {
         this.chart = anychart.timeline()
       }
 
-      // Add data to the chart
+      // ADD DATA TO CHART
       //set moments
       const filteredMomentsWithColors = this.filteredMoments.map(moment => {
         return {
@@ -222,8 +222,15 @@ export default {
       })
       const ranges = this.chart.range(filteredRangesWithColors)
 
+      // CHART CONFIGURATION
+
       // range labels
       ranges.labels().useHtml(true).fontColor('#fff').format('{%name}: from <span>{%start}{dateTimeFormat:YYYY}–{%end}{dateTimeFormat:YYYY}</span>')
+
+      // moment tooltip
+      var tooltip = moments.tooltip()
+      tooltip.separator(false)
+      this.chart.tooltip().fontFamily('Gill Sans').format('')
 
       // range tooltip
       const rangeTooltipFormat = 'From {%start}{dateTimeFormat:YYYY MMM dd} to {%end}{dateTimeFormat:YYYY MMM dd}</span>'
@@ -232,94 +239,41 @@ export default {
       ranges.tooltip().title().enabled(false)
       ranges.tooltip().separator().enabled(false)
 
-      // add more configuration to the chart
+      // scroll and interactivity
       this.chart.scroller(true)
       this.chart.interactivity({ selectionMode: 'none' })
 
+      // x axis appearance
       this.chart.axis().labels().fontColor('black')
       this.chart.axis().labels().fontWeight('bold')
-      moments.normal().stroke('black', 1)
-
-      // create two range markers
-      var rangeMarker1 = this.chart.rangeMarker(0)
-      var rangeMarker2 = this.chart.rangeMarker(1)
-      var rangeMarker3 = this.chart.rangeMarker(2)
-      var rangeMarker4 = this.chart.rangeMarker(3)
-      var rangeMarker5 = this.chart.rangeMarker(4)
-      var rangeMarker6 = this.chart.rangeMarker(5)
-      var rangeMarker7 = this.chart.rangeMarker(6)
-
-      // set the range of the markers
-      rangeMarker1.from(Date.UTC(1939, 0, 1))
-      rangeMarker1.to(Date.UTC(1940, 0, 1))
-      rangeMarker2.from(Date.UTC(1940, 0, 1))
-      rangeMarker2.to(Date.UTC(1941, 0, 1))
-      rangeMarker3.from(Date.UTC(1941, 0, 1))
-      rangeMarker3.to(Date.UTC(1942, 0, 1))
-      rangeMarker4.from(Date.UTC(1942, 0, 1))
-      rangeMarker4.to(Date.UTC(1943, 0, 1))
-      rangeMarker5.from(Date.UTC(1943, 0, 1))
-      rangeMarker5.to(Date.UTC(1944, 0, 1))
-      rangeMarker6.from(Date.UTC(1944, 0, 1))
-      rangeMarker6.to(Date.UTC(1945, 0, 1))
-      rangeMarker7.from(Date.UTC(1945, 0, 1))
-      rangeMarker7.to(Date.UTC(1946, 0, 1))
-
-      // set the fill of markers
-      rangeMarker1.fill('#6f97d1', 0.2)
-      rangeMarker2.fill('#9a75d1', 0.2)
-      rangeMarker3.fill('#345c2d', 0.2)
-      rangeMarker4.fill('#78cae3', 0.2)
-      rangeMarker5.fill('#3d1745', 0.2)
-      rangeMarker6.fill('#87f58c', 0.2)
-      rangeMarker7.fill('#4d2320', 0.2)
-
-      var textMarker1 = this.chart.textMarker(0)
-      var textMarker2 = this.chart.textMarker(1)
-      var textMarker3 = this.chart.textMarker(2)
-      var textMarker4 = this.chart.textMarker(3)
-      var textMarker5 = this.chart.textMarker(4)
-      var textMarker6 = this.chart.textMarker(5)
-      var textMarker7 = this.chart.textMarker(6)
-
-      // get the 'from' values of line markers
-      var rangeMarker1FromValue = rangeMarker1.from()
-      var rangeMarker2FromValue = rangeMarker2.from()
-      var rangeMarker3FromValue = rangeMarker3.from()
-      var rangeMarker4FromValue = rangeMarker4.from()
-      var rangeMarker5FromValue = rangeMarker5.from()
-      var rangeMarker6FromValue = rangeMarker6.from()
-      var rangeMarker7FromValue = rangeMarker7.from()
-
-      // set the values of text markers
-      textMarker1.value(rangeMarker1FromValue)
-      textMarker2.value(rangeMarker2FromValue)
-      textMarker3.value(rangeMarker3FromValue)
-      textMarker4.value(rangeMarker4FromValue)
-      textMarker5.value(rangeMarker5FromValue)
-      textMarker6.value(rangeMarker6FromValue)
-      textMarker7.value(rangeMarker7FromValue)
-
-      textMarker1.useHtml(true)
-      textMarker1.text(anychart.format.dateTime(rangeMarker1FromValue, 'y'))
-      textMarker2.useHtml(true)
-      textMarker2.text(anychart.format.dateTime(rangeMarker2FromValue, 'y'))
-      textMarker3.useHtml(true)
-      textMarker3.text(anychart.format.dateTime(rangeMarker3FromValue, 'y'))
-      textMarker4.useHtml(true)
-      textMarker4.text(anychart.format.dateTime(rangeMarker4FromValue, 'y'))
-      textMarker5.useHtml(true)
-      textMarker5.text(anychart.format.dateTime(rangeMarker5FromValue, 'y'))
-      textMarker6.useHtml(true)
-      textMarker6.text(anychart.format.dateTime(rangeMarker6FromValue, 'y'))
-      textMarker7.useHtml(true)
-      textMarker7.text(anychart.format.dateTime(rangeMarker7FromValue, 'y'))
-
       this.chart.axis().labels().fontFamily('Gill Sans')
+      this.chart.axis().labels().fontSize('1rem').position('center').anchor('center').padding(6, 0, 0, 0)
+      this.chart.axis().height(30)
 
-      var tooltip = moments.tooltip()
-      tooltip.separator(false)
-      this.chart.tooltip().fontFamily('Gill Sans').format('')
+      // moments appearance
+      moments.normal().stroke('black', 1)
+      moments.hovered().stroke('black', 2)
+      moments.labels().background().stroke('black').cornerType('round').corners(6)
+
+      // years markers
+      const colors = ['#6f97d1', '#9a75d1', '#345c2d', '#78cae3', '#3d1745', '#87f58c', '#4d2320']
+      for (let i = 0; i < 7; i++) {
+        const rangeMarker = this.chart.rangeMarker(i)
+        rangeMarker.from(Date.UTC(1939 + i, 0, 1))
+        rangeMarker.to(Date.UTC(1940 + 1, 0, 1))
+        rangeMarker.fill(colors[i], 0.2)
+        const textMarker = this.chart.textMarker(i)
+        const rangeMarkerFromValue = rangeMarker.from()
+        textMarker.value(rangeMarkerFromValue)
+        textMarker.useHtml(true)
+        textMarker.text(anychart.format.dateTime(rangeMarkerFromValue, 'y'))
+        textMarker.fontColor('black')
+        textMarker.fontWeight(600)
+        textMarker.offsetX(-10)
+        textMarker.offsetY(10)
+      }
+
+      // chart appearance
       this.chart.background().fill('transparent')
       this.chart.labels().fontFamily('Gill Sans').fontSize(14)
 
