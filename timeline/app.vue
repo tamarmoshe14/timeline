@@ -6,7 +6,7 @@
           <a href="/" class="app_header">Holocaust Timeline</a>
           <v-spacer />
           <v-btn class="btn" to="about">About</v-btn>
-          <v-btn class="btn" to="new_event">Add Event</v-btn>
+          <v-btn class="btn" to="new-event">Add Event</v-btn>
           <v-btn v-if="loggedIn" class="btn" @click="logoutClicked">Log Out</v-btn>
         </v-app-bar>
         <nuxtPage @loggedInChanged="loggedInChanged" />

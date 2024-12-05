@@ -7,8 +7,11 @@
         <v-btn class="btn" rounded @click="deselectAll">Deselect All</v-btn>
       </div>
       <v-autocomplete v-model="activeFilters" label="Search" class="autocomplete" dense rounded return-object multiple chips bg-color="white" closable-chips :items="filters" />
-      <p class="filters_list">Tags: {{ activeFiltersForDisplay }}</p>
+      <p v-if="!loading" class="filters_list">Tags: {{ activeFiltersForDisplay }}</p>
     </div>
+
+    <!-- LOADER -->
+    <div v-if="loading" class="loader" />
 
     <!-- TIMELINE -->
     <div ref="chartContainer" class="timeline_container" />
@@ -50,7 +53,8 @@ export default {
       chart: null,
       showMap: false,
       tagColors: {},
-      filters: []
+      filters: [],
+      loading: false
     }
   },
   computed: {
@@ -102,6 +106,7 @@ export default {
     async setMomentsAndRanges() {
       const response = await fetch('http://localhost:8787/')
       let events = await response.json()
+      this.loading = false
       events = this.getFormattedEvents(events)
 
       // filter out ranges
@@ -285,6 +290,7 @@ export default {
     }
   },
   created() {
+    this.loading = true
     this.setFilters()
   }
 }
@@ -373,5 +379,33 @@ export default {
   width: 100%;
   height: 100%;
   max-width: 45.2rem !important;
+}
+
+.loader {
+  width: 200px;
+  aspect-ratio: 1;
+  display: grid;
+  margin: 0 auto;
+}
+.loader::before,
+.loader::after {
+  content: '';
+  grid-area: 1/1;
+  --c: no-repeat radial-gradient(farthest-side, #25b09b 92%, #0000);
+  background: var(--c) 50% 0, var(--c) 50% 100%, var(--c) 100% 50%, var(--c) 0 50%;
+  background-size: 12px 12px;
+  animation: l12 1s infinite;
+}
+.loader::before {
+  margin: 4px;
+  filter: hue-rotate(45deg);
+  background-size: 8px 8px;
+  animation-timing-function: linear;
+}
+
+@keyframes l12 {
+  100% {
+    transform: rotate(0.5turn);
+  }
 }
 </style>

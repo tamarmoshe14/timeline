@@ -159,7 +159,7 @@ export default {
 
       this.loading = false
 
-      this.$router.push('/thank_you')
+      this.$router.push('/thank-you')
     },
     getPayload() {
       const payload = {
