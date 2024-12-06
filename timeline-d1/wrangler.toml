@@ -4,7 +4,7 @@ name = "timeline-d1"
 main = "src/index.ts"
 compatibility_date = "2024-11-12"
 compatibility_flags = ["nodejs_compat"]
-# assets={directory="./public/"}
+#assets={directory="./public/"}
 
 [[ d1_databases ]]
 binding = "DB" # available in your Worker on `env.DB`

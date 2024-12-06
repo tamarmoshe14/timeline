@@ -299,4 +299,11 @@ export default {
     min-width: auto;
   }
 }
+
+@media (max-width: 600px) {
+  .login_box {
+    margin: 2rem;
+    padding: 1rem !important;
+  }
+}
 </style>

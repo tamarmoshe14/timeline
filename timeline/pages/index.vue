@@ -24,7 +24,7 @@
     <div ref="chartContainer" class="timeline_container" />
 
     <!-- MODAL -->
-    <v-dialog v-if="activeEvent" v-model="modalIsOpen" class="event_modal" max-width="600">
+    <v-dialog v-if="activeEvent" v-model="modalIsOpen" persistent class="event_modal" max-width="600">
       <template #default>
         <div class="modal_content">
           <h2 class="modal_title">{{ activeEvent.y || activeEvent.name }}</h2>
@@ -169,6 +169,7 @@ export default {
     },
     addClickListener() {
       this.chart.listen('pointClick', e => {
+        console.log('GGG')
         const type = e.series.getType()
         this.openModal(e.pointIndex, type)
       })
@@ -261,6 +262,8 @@ export default {
 
       // scroll and interactivity
       this.chart.scroller(true)
+      this.chart.interactivity().scrollOnMouseWheel(true)
+      this.chart.interactivity().zoomOnMouseWheel(true)
       this.chart.interactivity({ selectionMode: 'none' })
 
       // x axis appearance
@@ -422,6 +425,12 @@ export default {
 @keyframes l12 {
   100% {
     transform: rotate(0.5turn);
+  }
+}
+
+@media (max-width: 600px) {
+  .autocomplete_container {
+    padding-inline: 2rem;
   }
 }
 </style>

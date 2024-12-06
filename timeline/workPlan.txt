@@ -2,3 +2,5 @@ Future improvements:
 translations
 images for filter - google
 zoom out button
+
+fix mobile experience
