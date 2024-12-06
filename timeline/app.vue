@@ -3,7 +3,7 @@
     <v-app>
       <NuxtLayout>
         <v-app-bar>
-          <a href="/" class="app_header">Holocaust Timeline</a>
+          <a href="/" class="app_header">HOLOCAUST TIMELINE</a>
           <v-spacer />
           <v-btn class="btn" to="about">About</v-btn>
           <v-btn class="btn" to="new-event">Add Event</v-btn>
@@ -63,6 +63,7 @@ export default {
   margin-inline: 1rem;
   margin-inline-end: 1rem !important;
   font-family: Gill Sans;
+  text-transform: none;
 }
 
 @media (max-width: 600px) {

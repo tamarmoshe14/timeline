@@ -2,7 +2,3 @@ Future improvements:
 translations
 images for filter - google
 zoom out button
-
-
-fixes before release:
-enlarge years font

@@ -2,12 +2,19 @@
   <div class="hp_container">
     <!-- AUTOCOMPLETE -->
     <div class="autocomplete_container">
-      <div class="select_btn_container">
-        <v-btn class="btn" rounded @click="selectAll">Select All</v-btn>
-        <v-btn class="btn" rounded @click="deselectAll">Deselect All</v-btn>
-      </div>
-      <v-autocomplete v-model="activeFilters" label="Search" class="autocomplete" dense rounded return-object multiple chips bg-color="white" closable-chips :items="filters" />
-      <p v-if="!loading" class="filters_list">Tags: {{ activeFiltersForDisplay }}</p>
+      <p class="instructions">Customize your timeline by selecting filters</p>
+      <v-autocomplete v-model="activeFilters" label="Select Filter" class="autocomplete" dense rounded return-object multiple chips bg-color="white" closable-chips :items="filters">
+        <template #prepend-item>
+          <v-list-item title="Select All" @click="selectAll">
+            <template v-slot:prepend>
+              <v-checkbox-btn :model-value="allFiltersAreSelected" />
+            </template>
+          </v-list-item>
+        </template>
+      </v-autocomplete>
+      <p v-if="!loading && activeFilters.length" class="filters_list">
+        Active Filters: <span>{{ activeFiltersForDisplay }}</span>
+      </p>
     </div>
 
     <!-- LOADER -->
@@ -22,11 +29,11 @@
         <div class="modal_content">
           <h2 class="modal_title">{{ activeEvent.y || activeEvent.name }}</h2>
           <p>{{ activeEvent.description }}</p>
-          <img v-if="activeEvent.img" class="image" :src="`http://localhost:8787/image/${activeEvent.img}`" width="200" height="200" />
-          <v-btn v-if="activeEvent.embed_link" class="map_btn" @click="toggleMap">{{ showMap ? 'Close Location' : 'See Location' }} -></v-btn>
+          <img v-if="activeEvent.img" class="image" :src="`${this.fetchPrefix}image/${activeEvent.img}`" width="200" height="200" />
+          <v-btn v-if="activeEvent.embed_link" class="map_btn" @click="toggleMap">{{ showMap ? 'Close Location' : 'See Location' }}</v-btn>
           <iframe v-if="activeEvent.embed_link && showMap" class="map" :src="activeEvent.embed_link" width="400" height="450" style="border: 0" allowfullscreen="true" loading="lazy" referrerpolicy="no-referrer-when-downgrade" />
 
-          <v-chip class="tag_text" :color="tagColors[activeEvent.main_tag]" variant="flat">Main Tag: {{ activeEvent.main_tag }}</v-chip>
+          <v-chip class="tag_text" :color="tagColors[activeEvent.main_tag]" variant="elevated">Main Tag: {{ activeEvent.main_tag }}</v-chip>
 
           <v-card-actions>
             <v-spacer />
@@ -54,7 +61,8 @@ export default {
       showMap: false,
       tagColors: {},
       filters: [],
-      loading: false
+      loading: false,
+      fetchPrefix: ''
     }
   },
   computed: {
@@ -93,7 +101,13 @@ export default {
 
       return filteredRanges.flat()
     },
+    allFiltersAreSelected() {
+      return this.activeFilters.length === this.filters.length
+    },
     activeFiltersForDisplay() {
+      if (this.activeFilters.length === this.filters.length) {
+        return 'All filters are active.'
+      }
       return this.activeFilters.map(filter => filter.title).join(', ')
     }
   },
@@ -104,7 +118,7 @@ export default {
   },
   methods: {
     async setMomentsAndRanges() {
-      const response = await fetch('http://localhost:8787/')
+      const response = await fetch(`${this.fetchPrefix}events`)
       let events = await response.json()
       this.loading = false
       events = this.getFormattedEvents(events)
@@ -141,7 +155,7 @@ export default {
       })
     },
     async setFilters() {
-      await fetch('http://localhost:8787/tags')
+      await fetch(`${this.fetchPrefix}tags`)
         .then(response => response.json())
         .then(tags => {
           this.filters = tags.map(tag => {
@@ -170,10 +184,11 @@ export default {
       return `rgba(${randomValue()}, ${randomValue()}, ${randomValue()}, ${alpha})`
     },
     selectAll() {
-      this.activeFilters = [...this.filters]
-    },
-    deselectAll() {
-      this.activeFilters = []
+      if (this.activeFilters.length === this.filters.length) {
+        this.activeFilters = []
+      } else {
+        this.activeFilters = this.filters.slice()
+      }
     },
     toggleMap() {
       this.showMap = !this.showMap
@@ -290,6 +305,7 @@ export default {
     }
   },
   created() {
+    this.fetchPrefix = process.env.NODE_ENV === 'development' ? 'http://localhost:8787/' : '/'
     this.loading = true
     this.setFilters()
   }
@@ -304,44 +320,40 @@ export default {
 }
 
 .autocomplete_container {
-  width: 20rem;
+  width: 24rem;
   margin: 3rem auto 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
   font-family: Gill Sans;
 
-  ::v-deep .v-chip {
+  .instructions {
+    margin-bottom: 1.5rem;
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+  }
+
+  :deep(.v-chip) {
     display: none;
   }
 
-  ::v-deep .v-label {
-    font-size: 1.6rem;
-  }
-
-  ::v-deep .v-field__outline {
+  :deep(.v-field__outline) {
     display: none;
-  }
-
-  .select_btn_container {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
   }
 
   .filters_list {
-    color: white;
+    color: black;
     font-family: Gill Sans;
     display: -webkit-box; /* Use a flex container with webkit box layout */
     -webkit-box-orient: vertical; /* Set the orientation to vertical */
     overflow: hidden; /* Hide overflow text */
     -webkit-line-clamp: 2; /* Limit to 2 lines */
     text-overflow: ellipsis;
-  }
-}
 
-.btn {
-  font-family: Gill Sans;
+    span {
+      margin-left: 0.2rem;
+    }
+  }
 }
 
 .timeline_container {
@@ -372,6 +384,10 @@ export default {
 
 .tag_text {
   font-size: 0.8rem !important;
+
+  :deep(.v-chip__content) {
+    color: black;
+  }
 }
 
 .image {

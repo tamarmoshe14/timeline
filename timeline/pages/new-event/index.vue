@@ -116,6 +116,7 @@ export default {
       eventType: 'moment',
       today: new Date().toISOString(),
       loading: false,
+      fetchPrefix: '',
       formData: {
         name: '',
         description: '',
@@ -140,7 +141,7 @@ export default {
         const imageData = new FormData()
         imageData.append('image', this.formData.image)
 
-        const response = await fetch('http://localhost:8787/image-upload', {
+        const response = await fetch(`${this.fetchPrefix}image-upload`, {
           method: 'POST',
           body: imageData
         })
@@ -149,7 +150,7 @@ export default {
         payload.image = imageId
       }
 
-      await fetch('http://localhost:8787/new-event', {
+      await fetch(`${this.fetchPrefix}create-new-event`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -169,7 +170,7 @@ export default {
         tags: this.formData.selectedTags.map(tagId => parseInt(tagId)) || [],
         new_tags: this.getNewTags(),
         main_tag_id: parseInt(this.formData.selectedMainTag) || '',
-        new_main_tag: this.formData.createdMainTag.trim().toLowerCase() || ''
+        new_main_tag: this.capitalizeFirstLetter(this.formData.createdMainTag.trim().toLowerCase()) || ''
       }
 
       if (this.eventType === 'moment') {
@@ -181,6 +182,10 @@ export default {
 
       return payload
     },
+    capitalizeFirstLetter(word) {
+      if (!word) return ''
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    },
     getDate(date) {
       const localDate = new Date(date)
       const utcDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate()))
@@ -190,7 +195,7 @@ export default {
       if (!this.formData.createdTags) {
         return ''
       } else {
-        return this.formData.createdTags.includes(',') ? this.formData.createdTags.split(',').map(tag => tag.trim().toLowerCase()) : [this.formData.createdTags.trim().toLowerCase()]
+        return this.formData.createdTags.includes(',') ? this.formData.createdTags.split(',').map(tag => this.capitalizeFirstLetter(tag.trim().toLowerCase())) : [this.capitalizeFirstLetter(this.formData.createdTags.trim().toLowerCase())]
       }
     },
     loginClicked() {
@@ -206,7 +211,7 @@ export default {
       return localStorage.getItem('isLoggedInToTimeline') === 'true'
     },
     async setTags() {
-      await fetch('http://localhost:8787/tags')
+      await fetch(`${this.fetchPrefix}tags`)
         .then(response => response.json())
         .then(tags => {
           this.existingTags = tags.map(tag => {
@@ -220,6 +225,7 @@ export default {
   },
 
   async created() {
+    this.fetchPrefix = process.env.NODE_ENV === 'development' ? 'http://localhost:8787/' : '/'
     this.loggedIn = this.isLoggedIn()
     await this.setTags()
   }

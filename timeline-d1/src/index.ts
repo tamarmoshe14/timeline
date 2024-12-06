@@ -24,7 +24,7 @@ export default {
 		}
 		if (request.method === 'POST') {
 			// CREATE NEW EVENT
-			if (request.url.includes('/new-event')) {
+			if (request.url.includes('/create-new-event')) {
 				// creating new tag for created main tag if needed
 				let { name, description, start_date, end_date, image, embed_link, main_tag_id, tags, new_main_tag, new_tags } = await request.json()
 
