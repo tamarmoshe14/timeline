@@ -50,7 +50,7 @@
         <div>
           <!-- MOMENT DATE -->
           <div v-if="eventType === 'moment'" class="moment_date">
-            <v-date-input id="moment_date" v-model="formData.date" :max="today" required label="Date" width="20rem" name="moment_date" />
+            <v-date-input id="moment_date" v-model="formData.date" :max="today" required label="Date" width="20rem" name="moment_date" @blur="dateTyped" />
           </div>
           <!-- RANGE DATES -->
           <div v-else class="range_dates">
@@ -72,7 +72,7 @@
 
             <div class="tag_content">
               <!-- SELECT MAIN TAG -->
-              <v-autocomplete v-if="existingTags.length" id="main_tag" v-model="formData.selectedMainTag" :required="mainTagSelectionType === 'select'" label="Select an existing tag" :disabled="mainTagSelectionType === 'create'" :items="existingTags" />
+              <v-autocomplete v-if="existingTags.length" id="main_tag" ref="main_tag_selection" v-model="formData.selectedMainTag" :required="mainTagSelectionType === 'select'" label="Select an existing tag" :disabled="mainTagSelectionType === 'create'" :items="existingTags" />
 
               <p class="or">OR</p>
               <!-- CREATE MAIN TAG -->
@@ -117,6 +117,7 @@ export default {
       today: new Date().toISOString(),
       loading: false,
       fetchPrefix: '',
+      editedEvent: null,
       formData: {
         name: '',
         description: '',
@@ -150,13 +151,23 @@ export default {
         payload.image = imageId
       }
 
-      await fetch(`${this.fetchPrefix}create-new-event`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      })
+      if (this.editedEvent) {
+        await fetch(`${this.fetchPrefix}update-event/${this.editedEvent.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        })
+      } else {
+        await fetch(`${this.fetchPrefix}create-new-event`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        })
+      }
 
       this.loading = false
 
@@ -191,6 +202,10 @@ export default {
       const utcDate = new Date(Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate()))
       return utcDate.toISOString() // Save as ISO UTC
     },
+    dateTyped(event) {
+      // console.log('DATE TYPED', date.target.value)
+      this.formData.date = new Date(event.target.value)
+    },
     getNewTags() {
       if (!this.formData.createdTags) {
         return ''
@@ -221,6 +236,33 @@ export default {
             }
           })
         })
+    },
+    async getEvent(id) {
+      const response = await fetch(`${this.fetchPrefix}event/${id}`)
+      const events = await response.json()
+      return events[0]
+    },
+    setEventData() {
+      this.eventType = this.editedEvent.end_date ? 'range' : 'moment'
+      this.formData.name = this.editedEvent.name
+      this.formData.description = this.editedEvent.description
+      this.formData.mapLink = this.editedEvent.embed_link ? '<iframe src="' + this.editedEvent.embed_link : ''
+      // TODO: HANDLE IMAGE
+
+      if (this.eventType === 'moment') {
+        this.formData.date = this.editedEvent.start_date
+      } else {
+        this.formData.startDate = this.editedEvent.start_date
+        this.formData.endDate = this.editedEvent.end_date
+      }
+
+      this.formData.selectedMainTag = this.existingTags.find(tag => tag.value === this.editedEvent.main_tag_id.toString()).value
+      // Mark the autocomplete as touched by triggering blur
+      if (!this.$refs.main_tag_selection.internalValue) {
+        this.$refs.main_tag_selection.focus()
+        this.$refs.main_tag_selection.blur()
+      }
+      this.formData.selectedTags = this.editedEvent.tags.split(',').map(selectedTagId => this.existingTags.find(tag => tag.value === selectedTagId).value)
     }
   },
 
@@ -228,6 +270,10 @@ export default {
     this.fetchPrefix = process.env.NODE_ENV === 'development' ? 'http://localhost:8787/' : '/'
     this.loggedIn = this.isLoggedIn()
     await this.setTags()
+    if (this.$route.query.id) {
+      this.editedEvent = await this.getEvent(this.$route.query.id)
+      this.setEventData()
+    }
   }
 }
 </script>

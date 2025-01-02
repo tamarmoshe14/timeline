@@ -1,6 +1,16 @@
 Future improvements:
 translations
-images for filter - google
 zoom out button
-
+avoid editing if no change
+edit the image
 fix mobile experience
+long names for short ranges are not visible
+
+
+
+how to deploy?
+Toml assets - uncomment
+Remove .output/public from nuxt
+nuxt generate
+Move public to server folder
+npx wrangler deploy

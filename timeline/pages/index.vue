@@ -37,7 +37,10 @@
 
           <v-card-actions>
             <v-spacer />
-            <v-btn text="Close" @click="closeModal" />
+            <div>
+              <v-btn v-if="loggedIn" :to="`/new-event?id=${activeEvent.id}`">Edit</v-btn>
+              <v-btn text="Close" @click="closeModal" />
+            </div>
           </v-card-actions>
         </div>
       </template>
@@ -62,7 +65,8 @@ export default {
       tagColors: {},
       filters: [],
       loading: false,
-      fetchPrefix: ''
+      fetchPrefix: '',
+      loggedIn: false
     }
   },
   computed: {
@@ -140,6 +144,7 @@ export default {
     getFormattedEvents(events) {
       return events.map(event => {
         return {
+          id: event.id,
           name: event.name.toUpperCase(),
           start: event.start_date,
           end: event.end_date,
@@ -169,7 +174,6 @@ export default {
     },
     addClickListener() {
       this.chart.listen('pointClick', e => {
-        console.log('GGG')
         const type = e.series.getType()
         this.openModal(e.pointIndex, type)
       })
@@ -305,11 +309,15 @@ export default {
 
       // Draw the chart
       this.chart.draw()
+    },
+    isLoggedIn() {
+      return localStorage.getItem('isLoggedInToTimeline') === 'true'
     }
   },
   created() {
     this.fetchPrefix = process.env.NODE_ENV === 'development' ? 'http://localhost:8787/' : '/'
     this.loading = true
+    this.loggedIn = this.isLoggedIn()
     this.setFilters()
   }
 }
